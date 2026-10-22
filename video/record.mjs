@@ -18,7 +18,7 @@ mkdirSync(FRAMES, { recursive: true });
 
 const server = spawn('node', ['server.mjs'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
 const chrome = spawn(CHROME, [
-  '--headless=new', `--remote-debugging-port=${DEBUG}`, `--user-data-dir=${path.join(OUT, 'profile')}`,
+  '--headless=new', `--remote-debugging-port=${DEBUG}`, "--remote-debugging-address=127.0.0.1", `--user-data-dir=${path.join(OUT, 'profile')}`,
   `--window-size=${W},${H}`, '--hide-scrollbars', '--no-first-run', '--no-default-browser-check', 'about:blank',
 ], { stdio: 'ignore' });
 
@@ -58,7 +58,7 @@ const js = async (expr) => {
 
 await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: DPR, mobile: false });
-await send('Page.navigate', { url: `http://localhost:${PORT}/` });
+await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
 await sleep(1500);
 
 // ---------- recording-only styling + helpers injected into the page ----------

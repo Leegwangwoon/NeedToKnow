@@ -1,7 +1,7 @@
 // video/gallery.mjs — renders the Devpost image gallery (3:2, 1800×1200 JPG) into data/.
 //   node video/gallery.mjs   (needs Chrome)
 import { spawn } from 'node:child_process';
-import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,11 +13,12 @@ const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PORT = 8767, DEBUG = 9334, W = 1200, H = 800, DPR = 1.5;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
+// Only clear images this script generates; leave anything else in data/ alone.
+for (const f of readdirSync(OUT)) if (/^\d\d-[\w-]+\.(jpg|png)$/.test(f)) rmSync(path.join(OUT, f));
 
 const server = spawn('node', ['server.mjs'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
-const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${DEBUG}`, `--user-data-dir=${PROFILE}`,
+const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${DEBUG}`, "--remote-debugging-address=127.0.0.1", `--user-data-dir=${PROFILE}`,
   `--window-size=${W},${H}`, '--hide-scrollbars', '--no-first-run', 'about:blank'], { stdio: 'ignore' });
 
 let targets;
@@ -65,7 +66,7 @@ for (const id of ['problem', 'how', 'math']) {
 }
 
 // 05–08: the real app
-await send('Page.navigate', { url: `http://localhost:${PORT}/` });
+await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
 await sleep(1500);
 await js(`(() => {
   const css = document.createElement('style');

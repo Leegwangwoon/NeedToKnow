@@ -327,7 +327,7 @@ function renderVault() {
     v.append(el('div', { className: 'attr' }, `
       <div class="top"><span>${a.label}</span><span class="val">${a.raw}</span></div>
       <div class="meta">${creds
-        ? `✓ ${a.issuer} · ${BATCH - used}/${BATCH} unused<br>C = ${short(creds[0].cred.C)}`
+        ? `✓ ${a.issuer} · ${creds.length - used}/${creds.length} unused<br>C = ${short(creds[0].cred.C)}`
         : `<span class="pill warn">not yet attested</span>`}</div>`));
   }
 }
@@ -450,6 +450,11 @@ async function run(service, request, preset) {
 
   const statements = preds.filter(Boolean);
   if (!statements.length) { say('Nothing here can be answered with a proof, so nothing will be sent.'); return done(); }
+  // The service verifies against its own requirements, not whatever the agent chose to prove.
+  // Custom requests have no known policy, so the service accepts the agent's proposal.
+  const required = preset
+    ? preset.cached.predicates.map((p) => ({ ...toStatement(p), label: p.label }))
+    : statements;
   await sleep(300);
 
   // Local feasibility check: values are checked in the wallet, never by the LLM.
@@ -461,7 +466,7 @@ async function run(service, request, preset) {
     m.querySelectorAll('button').forEach((b) => (b.disabled = true));
     if (choice === 'skip') { say('Okay. Nothing was disclosed.'); svcNote('Applicant withdrew. No data received.'); return done(); }
     say('Generating a dishonest proof that claims the false statement…');
-    await disclose({ service, nonce, preset, plan }, statements, { cheat: true });
+    await disclose({ service, nonce, preset, plan }, statements, { cheat: true, requested: required });
     return done();
   }
 
@@ -475,7 +480,7 @@ async function run(service, request, preset) {
     consent = 'explicit';
   }
   if (!approved.length) { say('Denied. Nothing was sent.'); svcNote('User declined. No data received.'); return done(); }
-  await disclose({ service, nonce, preset, plan }, approved, { consent, requested: statements });
+  await disclose({ service, nonce, preset, plan }, approved, { consent, requested: required });
   done();
 }
 function done() { busy = false; $('#sendBtn').disabled = false; }
@@ -517,7 +522,13 @@ async function disclose(session, preds, { cheat = false, consent = 'forged (demo
   const line = (t, cls = '') => { out.innerHTML += `<span class="${cls}">${t}</span>\n`; };
   const items = [];
   for (const p of preds) {
-    const slot = wallet[p.attr].find((c) => !c.usedBy) ?? wallet[p.attr][0];
+    // Never reuse a shown credential (that would make services linkable): top up from the issuer instead.
+    let slot = wallet[p.attr].find((c) => !c.usedBy);
+    if (!slot) {
+      const a = ATTRS[p.attr];
+      slot = { ...(await zk.issueCredential(issuers[a.issuer], p.attr, a.value, `${p.attr}-${randHex(4)}`)), usedBy: null };
+      wallet[p.attr].push(slot);
+    }
     slot.usedBy = session.service;
     const t0 = performance.now();
     const proof = await zk.provePredicate(slot.cred, slot.secret, stripLabel(p), session.nonce, { cheat });

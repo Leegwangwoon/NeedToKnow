@@ -12,7 +12,7 @@ Built for the super{set} hackathon, Track 2: *Personal agents and data privacy*.
 
 ```bash
 npm install
-ANTHROPIC_API_KEY=sk-ant-... npm start   # → http://localhost:8765
+ANTHROPIC_API_KEY=sk-ant-... npm start   # → http://127.0.0.1:8765
 ```
 
 1. **Get signed credentials:** issuers (ID, payroll, bank, credit bureau) sign Pedersen commitments to the synthetic persona's attributes.

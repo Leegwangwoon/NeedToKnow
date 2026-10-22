@@ -3,7 +3,7 @@
 // Privacy boundary: this process (and Claude) only ever receives the service's request text and the
 // vault *schema*. Attribute values and commitment openings never leave the browser.
 //
-//   ANTHROPIC_API_KEY=... node server.mjs      → http://localhost:8765
+//   ANTHROPIC_API_KEY=... node server.mjs      → http://127.0.0.1:8765
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -118,7 +118,10 @@ http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && req.url === '/api/agent') {
       let body = '';
-      for await (const chunk of req) body += chunk;
+      for await (const chunk of req) {
+        body += chunk;
+        if (body.length > 64_000) throw new Error('request too large');
+      }
       const { service, request } = JSON.parse(body);
       const t0 = Date.now();
       const result = await plan({ service: String(service).slice(0, 200), request: String(request).slice(0, 8000) });
@@ -134,4 +137,4 @@ http.createServer(async (req, res) => {
     res.writeHead(502, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: err.message }));
   }
-}).listen(PORT, () => console.log(`NeedToKnow on http://localhost:${PORT}  (model ${MODEL}, key ${process.env.ANTHROPIC_API_KEY ? 'set' : 'MISSING → UI uses cached plans'})`));
+}).listen(PORT, '127.0.0.1', () => /* loopback only: nobody on shared Wi-Fi can spend your API credits */ console.log(`NeedToKnow on http://127.0.0.1:${PORT}  (model ${MODEL}, key ${process.env.ANTHROPIC_API_KEY ? 'set' : 'MISSING → UI uses cached plans'})`));
