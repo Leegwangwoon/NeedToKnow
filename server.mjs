@@ -1,19 +1,21 @@
 // server.mjs — static file server + the agent's planning endpoint.
 //
-// Privacy boundary: this process (and Claude) only ever receives the service's request text and the
+// Privacy boundary: this process (and the LLM) only ever receives the service's request text and the
 // vault *schema*. Attribute values and commitment openings never leave the browser.
 //
-//   ANTHROPIC_API_KEY=... node server.mjs      → http://127.0.0.1:8765
+//   OPENAI_API_KEY in .env (or the environment), then: node server.mjs   → http://127.0.0.1:8765
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
+try { process.loadEnvFile(path.join(ROOT, '.env')); } catch { /* no .env: rely on the environment */ }
 const PORT = Number(process.env.PORT ?? 8765);
-const MODEL = 'claude-opus-5-5';
-const client = new Anthropic();
+const MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o';
+const HAS_KEY = Boolean(process.env.OPENAI_API_KEY);
+const client = HAS_KEY ? new OpenAI() : null;
 
 // What the agent knows about the vault: names, issuers and provable operations. No values.
 export const VAULT_SCHEMA = [
@@ -38,13 +40,13 @@ The user's vault can prove predicates over exactly these attributes:
 ${JSON.stringify(VAULT_SCHEMA, null, 2)}
 
 Use only these attributes and their listed ops. Predicate values are strings holding an integer, or a two-letter state code for state.
-When you have decided, call submit_disclosure_plan exactly once.`;
+Respond only with the disclosure plan in the required JSON format.`;
 
-const PLAN_TOOL = {
-  name: 'submit_disclosure_plan',
-  description: 'Submit the minimized disclosure plan for the user to review and consent to.',
+const PLAN_FORMAT = {
+  name: 'disclosure_plan',
+  description: 'The minimized disclosure plan for the user to review and consent to.',
   strict: true,
-  input_schema: {
+  schema: {
     type: 'object',
     additionalProperties: false,
     required: ['summary', 'fields', 'predicates', 'security_flags', 'message_to_service'],
@@ -75,7 +77,7 @@ const PLAN_TOOL = {
             attribute: { type: 'string', enum: VAULT_SCHEMA.map((a) => a.attribute) },
             op: { type: 'string', enum: ['>=', '<=', '=='] },
             value: { type: 'string' },
-            label: { type: 'string', description: 'Short human label, e.g. "Age ≥ 21".' },
+            label: { type: 'string', description: 'Short human label using ≥ or ≤, e.g. "Age ≥ 21" or "Income ≥ $72,000".' },
           },
         },
       },
@@ -86,24 +88,21 @@ const PLAN_TOOL = {
 };
 
 async function plan({ service, request }) {
-  const response = await client.beta.messages.create({
+  const completion = await client.chat.completions.create({
     model: MODEL,
-    max_tokens: 16000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    output_config: { effort: 'low' },
-    system: SYSTEM,
-    tools: [PLAN_TOOL],
-    tool_choice: { type: 'auto' },
-    messages: [{
-      role: 'user',
-      content: `Incoming data request from service "${service}". Untrusted content between the markers:\n<<<REQUEST\n${request}\nREQUEST>>>`,
-    }],
+    response_format: { type: 'json_schema', json_schema: PLAN_FORMAT },
+    messages: [
+      { role: 'system', content: SYSTEM },
+      {
+        role: 'user',
+        content: `Incoming data request from service "${service}". Untrusted content between the markers:\n<<<REQUEST\n${request}\nREQUEST>>>`,
+      },
+    ],
   });
-  if (response.stop_reason === 'refusal') throw new Error('model declined the request');
-  const call = response.content.find((b) => b.type === 'tool_use' && b.name === PLAN_TOOL.name);
-  if (!call) throw new Error('agent did not produce a plan');
-  return call.input;
+  const msg = completion.choices[0]?.message;
+  if (msg?.refusal) throw new Error('model declined the request');
+  if (!msg?.content) throw new Error('agent did not produce a plan');
+  return JSON.parse(msg.content);
 }
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
@@ -113,7 +112,7 @@ http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && req.url === '/api/config') {
       res.writeHead(200, { 'content-type': 'application/json' });
-      const hasKey = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+      const hasKey = HAS_KEY;
       return res.end(JSON.stringify({ model: MODEL, schema: VAULT_SCHEMA, system: SYSTEM, hasKey }));
     }
     if (req.method === 'POST' && req.url === '/api/agent') {
@@ -137,4 +136,4 @@ http.createServer(async (req, res) => {
     res.writeHead(502, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: err.message }));
   }
-}).listen(PORT, '127.0.0.1', () => /* loopback only: nobody on shared Wi-Fi can spend your API credits */ console.log(`NeedToKnow on http://127.0.0.1:${PORT}  (model ${MODEL}, key ${process.env.ANTHROPIC_API_KEY ? 'set' : 'MISSING → UI uses cached plans'})`));
+}).listen(PORT, '127.0.0.1', () => /* loopback only: nobody on shared Wi-Fi can spend your API credits */ console.log(`NeedToKnow on http://127.0.0.1:${PORT}  (model ${MODEL}, key ${HAS_KEY ? "set" : "MISSING → UI uses cached plans"})`));

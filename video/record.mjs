@@ -50,6 +50,8 @@ ws.onmessage = async ({ data }) => {
     send('Page.screencastFrameAck', { sessionId });
   }
 };
+// Waits for the agent (live LLM or cached plan) to render its plan for the current request.
+const waitPlan = () => js(`new Promise((r) => { const t = setInterval(() => { if (document.querySelector(".msg.agent table") || document.querySelector(".msg.agent .pill.bad")) { clearInterval(t); setTimeout(r, 600); } }, 100); })`);
 const js = async (expr) => {
   const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
   if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
@@ -66,7 +68,6 @@ await js(`(() => {
   const css = document.createElement('style');
   css.textContent = \`
     body { font-size: 14.5px; }
-    #mode, .msg .row .pill:not(.ok):not(.bad) { display: none !important; }
     main > section:first-child, main > section:last-child { position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow: auto; }
     .rec-overlay { position: fixed; inset: 0; z-index: 99; display: flex; flex-direction: column; justify-content: center; padding: 0 110px;
       background: radial-gradient(900px 500px at 80% 0%, #3a2ea8 0%, transparent 60%), linear-gradient(135deg, #0d0e1f, #141838);
@@ -140,6 +141,7 @@ await caption("A landlord's AI agent wants <b>6 months of bank statements</b>.")
 await js('rec.type(0)');
 await sleep(1200);
 await click('#sendBtn');
+await waitPlan();
 await sleep(2400);
 await caption('Your agent cuts it down to <b>one fact</b>: balance ≥ $10,000.');
 await hl('.msg.agent table');
@@ -164,6 +166,7 @@ await caption('Now a request with a <b>hidden prompt injection</b>…');
 await js('rec.type(4)');
 await sleep(1000);
 await click('#sendBtn');
+await waitPlan();
 await sleep(2200);
 await hl('.msg.alert');
 await caption("Flagged. And there's nothing to leak: <b>the LLM never sees your values.</b>");
@@ -176,6 +179,7 @@ await caption("Try to fake a <b>760 credit score</b> when you have 742…");
 await js('rec.preset(3)');
 await sleep(600);
 await click('#sendBtn');
+await waitPlan();
 await sleep(2400);
 await click('#cheat');
 await sleep(1600);
@@ -184,7 +188,7 @@ await hl('#svc .verdict.bad');
 await sleep(3400);
 await js('rec.hideCaption()');
 
-await overlay('<div class="big" style="font-size:88px">Need<em>To</em>Know</div><div class="small">AI agent that shares proofs, not your data.</div><div class="small" style="font-size:20px;color:#8b90b8">Pedersen commitments · Σ-protocol range proofs · Fiat–Shamir · Claude<br>github.com/Leegwangwoon/NeedToKnow</div>');
+await overlay('<div class="big" style="font-size:88px">Need<em>To</em>Know</div><div class="small">AI agent that shares proofs, not your data.</div><div class="small" style="font-size:20px;color:#8b90b8">Pedersen commitments · Σ-protocol range proofs · Fiat–Shamir · GPT-4o<br>github.com/Leegwangwoon/NeedToKnow</div>');
 await sleep(4500);
 
 await send('Page.stopScreencast');

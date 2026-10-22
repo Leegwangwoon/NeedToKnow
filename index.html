@@ -318,6 +318,14 @@ function toStatement(p) {
   return null;
 }
 
+// Keep the model's label only if it states the comparison; otherwise build one from the predicate.
+function labelFor(p) {
+  if (/[≥≤=]/.test(p.label)) return p.label;
+  const name = { age: 'Age', state: 'Resident of', annual_income_usd: 'Income', bank_balance_usd: 'Bank balance', credit_score: 'Credit score' }[p.attribute];
+  const money = p.attribute.endsWith('_usd') ? '$' + Number(p.value).toLocaleString('en-US') : p.value;
+  return p.attribute === 'state' ? `${name} ${p.value}` : `${name} ${p.op === '>=' ? '≥' : '≤'} ${money}`;
+}
+
 // ---------- vault ----------
 function renderVault() {
   const v = $('#vault'); v.innerHTML = '';
@@ -407,7 +415,7 @@ async function getPlan(service, request, preset) {
       return { plan: preset.cached, how: `agent unavailable (${err.message}); using cached plan` };
     }
   }
-  if (!preset) throw new Error('Custom requests need the live agent: run `ANTHROPIC_API_KEY=… npm start`');
+  if (!preset) throw new Error('Custom requests need the live agent: put OPENAI_API_KEY in .env and run `npm start`');
   return { plan: preset.cached, how: 'offline mode: cached plan' };
 }
 
@@ -434,7 +442,7 @@ async function run(service, request, preset) {
   const preds = [];
   plan.predicates.forEach((p, i) => {
     const st = toStatement(p);
-    preds[i] = st ? { ...st, label: p.label } : null;
+    preds[i] = st ? { ...st, label: labelFor(p) } : null;
   });
   const rejected = plan.predicates.filter((_, i) => !preds[i]);
   const rows = plan.fields.map((f) => {

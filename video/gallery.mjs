@@ -38,6 +38,8 @@ ws.onmessage = ({ data }) => {
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++seq; pending.set(id, { resolve, reject }); ws.send(JSON.stringify({ id, method, params }));
 });
+// Waits for the agent (live LLM or cached plan) to render its plan for the current request.
+const waitPlan = () => js(`new Promise((r) => { const t = setInterval(() => { if (document.querySelector(".msg.agent table") || document.querySelector(".msg.agent .pill.bad")) { clearInterval(t); setTimeout(r, 600); } }, 100); })`);
 const js = async (expr) => {
   const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
   if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
@@ -71,7 +73,6 @@ await sleep(1500);
 await js(`(() => {
   const css = document.createElement('style');
   css.textContent = \`
-    #mode, .msg .row .pill:not(.ok):not(.bad) { display: none !important; }
     main > section:first-child, main > section:last-child { position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow: auto; }
     .gal-tag { position: fixed; right: 18px; bottom: 18px; z-index: 99; background: rgba(12,12,24,.94); color: #fff;
       font: 700 19px/1.3 -apple-system, Inter, sans-serif; padding: 12px 20px; border-radius: 14px; border: 1px solid rgba(142,162,255,.6);
@@ -91,7 +92,7 @@ await js(`(() => {
 const g = (expr) => js(`gal.${expr}`);
 
 await g(`click('#issueBtn')`); await sleep(1200);
-await g('preset(0)'); await g(`click('#sendBtn')`); await sleep(1500);
+await g('preset(0)'); await g(`click('#sendBtn')`); await waitPlan();
 await g(`focus('.consent')`); await g(`hl('.msg.agent table')`);
 await g(`tag(${JSON.stringify("Agent-to-agent: a leasing bot asks for 3 documents. Your agent sends <b>one ZK proof</b> instead.")})`);
 await shot('minimize-and-consent');
@@ -101,13 +102,13 @@ await g(`hl('#svc .stats')`);
 await g(`tag(${JSON.stringify('Verified in milliseconds. <b>0 raw values</b> ever reach the other side.')})`);
 await shot('verified-zero-raw-values');
 
-await g('preset(4)'); await g(`click('#sendBtn')`); await sleep(1500);
+await g('preset(4)'); await g(`click('#sendBtn')`); await waitPlan();
 await g(`focus('.msg.alert')`); await g(`hl('.msg.alert')`);
 await g(`tag(${JSON.stringify("Prompt injection flagged. <b>The LLM never sees your values</b>, so there's nothing to leak.")})`);
 await shot('prompt-injection-blocked');
 await g(`click('#yes')`); await sleep(1500);
 
-await g('preset(3)'); await g(`click('#sendBtn')`); await sleep(1500);
+await g('preset(3)'); await g(`click('#sendBtn')`); await waitPlan();
 await g(`click('#cheat')`); await sleep(1500);
 await g(`focus('.log')`); await g(`hl('#svc .verdict')`);
 await g(`tag(${JSON.stringify('Faking a 760 credit score? The forged proof is <b>rejected</b>. Math does not negotiate.')})`);

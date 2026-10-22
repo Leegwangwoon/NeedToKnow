@@ -10,7 +10,7 @@ So we asked: **what if any agent could prove a fact about you, without ever reve
 
 **NeedToKnow** is a privacy layer for agent-to-agent data exchange:
 
-1. **Minimize:** Your agent (Claude) reads the incoming request and reduces it to the smallest set of yes/no predicates the other side actually needs. For example, "send 6 months of bank statements" becomes $\text{balance} \geq \$10{,}000$.
+1. **Minimize:** Your agent (GPT-4o) reads the incoming request and reduces it to the smallest set of yes/no predicates the other side actually needs. For example, "send 6 months of bank statements" becomes $\text{balance} \geq \$10{,}000$.
 2. **Consent:** You approve each proof on a consent card, or a standing policy auto-approves low-risk ones.
 3. **Prove:** Your on-device wallet generates a zero-knowledge proof over an issuer-signed credential. The verifier learns **exactly one bit** per predicate.
 4. **Record:** Every disclosure is appended to a hash-chained consent ledger.
@@ -45,7 +45,7 @@ so a proof captured by one verifier is useless at another.
 
 **Unlinkability.** Issuers hand out a batch of credentials; the wallet uses a fresh one per verifier, so two services can't correlate you by commitment.
 
-**The agent.** Claude (`claude-opus-5-5`) plans the disclosure through a strict tool schema. The wallet validates every predicate before proving, so the model can propose but never decide what's true.
+**The agent.** GPT-4o (OpenAI) plans the disclosure through a strict JSON schema (structured outputs). The wallet validates every predicate before proving, so the model can propose but never decide what's true.
 
 **Performance:** proving takes ~45 ms, verifying ~60 ms, and each proof is ~11 KB, all in the browser.
 

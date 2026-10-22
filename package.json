@@ -6,11 +6,11 @@
     "start": "node server.mjs",
     "test": "node test.mjs"
   },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^1.1.0"
-  },
   "devDependencies": {
     "katex": "^0.16.11",
     "marked": "^12.0.2"
+  },
+  "dependencies": {
+    "openai": "^7.42.0"
   }
 }
