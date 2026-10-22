@@ -1,0 +1,51 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>NeedToKnow thumbnail</title>
+<style>
+  html, body { margin: 0; width: 1200px; height: 800px; overflow: hidden; }
+  body {
+    background: radial-gradient(1000px 600px at 85% 10%, #22306b 0%, transparent 60%), #0f1020;
+    color: #eef0ff; font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; padding: 64px 72px; box-sizing: border-box;
+  }
+  .brand { font-size: 84px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; }
+  .brand span { color: #8ea2ff; }
+  .tag { font-size: 30px; color: #b9bfe6; margin-top: 16px; font-weight: 500; }
+  .flow { display: grid; grid-template-columns: 1fr 120px 1fr; align-items: center; margin-top: 56px; gap: 0; }
+  .card { border-radius: 22px; padding: 26px 30px; font-size: 26px; line-height: 1.75; }
+  .asked { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #8b8fae; }
+  .asked div { text-decoration: line-through; text-decoration-color: #ff6b6b; text-decoration-thickness: 3px; }
+  .proved { background: rgba(105,196,127,0.12); border: 1px solid rgba(105,196,127,0.45); color: #c9f2d3; }
+  .label { font-size: 17px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; text-decoration: none !important; }
+  .asked .label { color: #ff8f8f; } .proved .label { color: #69c47f; }
+  .arrow { text-align: center; font-size: 22px; color: #8ea2ff; font-weight: 700; line-height: 1.2; }
+  .arrow b { display: block; font-size: 64px; font-family: Georgia, serif; font-style: italic; }
+  .foot { margin-top: auto; display: flex; gap: 14px; }
+  .chip { font-size: 21px; padding: 8px 18px; border-radius: 999px; background: rgba(142,162,255,0.15); color: #c7d0ff; border: 1px solid rgba(142,162,255,0.35); }
+</style></head>
+<body>
+  <div class="brand">Need<span>To</span>Know</div>
+  <div class="tag">Your AI agent proves facts about you. It never shares your data.</div>
+  <div class="flow">
+    <div class="card asked">
+      <div class="label">They asked for</div>
+      <div>Social Security Number</div>
+      <div>3 months of pay stubs</div>
+      <div>Bank statements</div>
+      <div>Date of birth</div>
+    </div>
+    <div class="arrow"><b>π</b>ZK proof</div>
+    <div class="card proved">
+      <div class="label">Your agent sends</div>
+      <div>✓ Age ≥ 18</div>
+      <div>✓ Income ≥ 3× rent</div>
+      <div>✓ Credit score ≥ 680</div>
+      <div style="color:#8fd9a2">0 raw values shared</div>
+    </div>
+  </div>
+  <div class="foot">
+    <span class="chip">Zero-knowledge proofs</span>
+    <span class="chip">Personal AI agent</span>
+    <span class="chip">Consent ledger</span>
+    <span class="chip">Injection-proof by design</span>
+  </div>
+</body></html>
