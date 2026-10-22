@@ -72,6 +72,8 @@ server.mjs       agent endpoint + static server
 index.html       demo UI
 test.mjs         crypto tests
 submission/      Devpost text, About (Markdown + LaTeX), thumbnails
+data/            Devpost gallery images (3:2)
+video/           scripts that record the demo video and render the gallery
 ```
 
 ## Credits

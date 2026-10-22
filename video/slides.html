@@ -1,0 +1,83 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>NeedToKnow slides</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<style>
+  html, body { margin: 0; width: 1200px; height: 800px; overflow: hidden; }
+  body { background: radial-gradient(900px 520px at 85% 0%, #2f2a8f 0%, transparent 60%), linear-gradient(135deg, #0d0e1f, #141838);
+    color: #eef0ff; font-family: -apple-system, BlinkMacSystemFont, Inter, sans-serif; }
+  .slide { display: none; position: absolute; inset: 0; padding: 60px 72px; box-sizing: border-box; flex-direction: column; }
+  .slide.on { display: flex; }
+  .kick { font-size: 18px; letter-spacing: .14em; text-transform: uppercase; color: #8ea2ff; font-weight: 700; }
+  h1 { font-size: 54px; letter-spacing: -0.03em; line-height: 1.08; margin: 12px 0 0; font-weight: 850; }
+  h1 em { font-style: normal; background: linear-gradient(90deg,#8ea2ff,#3ee0b0); -webkit-background-clip: text; color: transparent; }
+  .row { display: flex; gap: 22px; margin-top: 40px; align-items: stretch; }
+  .box { flex: 1; border-radius: 18px; padding: 22px 26px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.13); font-size: 21px; line-height: 1.55; }
+  .box h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: #9aa0c8; }
+  .box.green { background: rgba(62,224,143,.1); border-color: rgba(62,224,143,.45); }
+  .box.green h3 { color: #3ee08f; }
+  .box.red h3 { color: #ff8f8f; }
+  .strike { text-decoration: line-through; text-decoration-color: #ff6b6b; text-decoration-thickness: 2px; color: #9a9db8; }
+  .arrow { align-self: center; font-size: 40px; color: #8ea2ff; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 36px; }
+  .step { border-radius: 16px; padding: 20px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.13); font-size: 18px; line-height: 1.45; }
+  .step b { display: block; font-size: 22px; margin: 8px 0 6px; }
+  .step .n { font-size: 15px; color: #8ea2ff; font-weight: 800; }
+  .wall { margin-top: 26px; border-radius: 16px; padding: 16px 22px; border: 2px dashed rgba(255,214,0,.6); color: #ffe07a; font-size: 20px; }
+  .math { margin-top: 26px; display: grid; gap: 12px; }
+  .eq { border-radius: 14px; padding: 12px 22px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); display: grid; grid-template-columns: 210px 1fr; align-items: center; font-size: 19px; }
+  .eq .lbl { color: #9aa0c8; font-size: 16px; font-weight: 700; letter-spacing: .04em; }
+  .eq .katex { font-size: 1.25em; color: #fff; }
+  .slide { justify-content: center; }
+  .foot { margin-top: 44px; color: #8b90b8; font-size: 17px; }
+</style></head>
+<body>
+<!-- 1: problem -->
+<section class="slide" id="problem">
+  <div class="kick">The problem</div>
+  <h1>Agents talk to agents.<br>Your data gets <em>over-shared</em> at every hop.</h1>
+  <div class="row">
+    <div class="box red"><h3>A leasing agent asks for</h3>
+      <div class="strike">6 months of bank statements</div><div class="strike">Bank account number</div>
+      <div class="strike">Screenshot of your balance</div><div class="strike">SSN, pay stubs, ID scans</div></div>
+    <div class="arrow">→</div>
+    <div class="box green"><h3>What it actually needs</h3>
+      <div style="font-size:30px;font-weight:800;margin-top:10px">balance ≥ $10,000 ?</div>
+      <div style="margin-top:14px">One bit. Yes or no.</div>
+      <div style="color:#8fd9a2;margin-top:6px">NeedToKnow sends exactly that, as a zero-knowledge proof.</div></div>
+  </div>
+  <div class="foot">Plus: an LLM agent holding raw data is one prompt injection away from leaking it.</div>
+</section>
+
+<!-- 2: how it works -->
+<section class="slide" id="how">
+  <div class="kick">How it works</div>
+  <h1>The agent <em>plans</em>. The wallet <em>proves</em>.</h1>
+  <div class="flow">
+    <div class="step"><span class="n">01 · MINIMIZE</span><b>🤖 Claude agent</b>Reads any request and reduces it to the narrowest yes/no predicates.</div>
+    <div class="step"><span class="n">02 · CONSENT</span><b>✅ You decide</b>Consent card per proof, or a standing policy for low-risk ones.</div>
+    <div class="step"><span class="n">03 · PROVE</span><b>🔐 On-device wallet</b>ZK proof over a bank/issuer-signed commitment. ~45 ms.</div>
+    <div class="step"><span class="n">04 · VERIFY</span><b>🏢 Other agent</b>Checks issuer signature + proof. Learns 1 bit. Records nothing raw.</div>
+  </div>
+  <div class="wall">🧱 Privacy wall: the LLM only sees a <b>schema</b> of what can be proven, never your values. A hijacked agent has nothing to leak.</div>
+  <div class="foot">Every disclosure is appended to a hash-chained consent ledger.</div>
+</section>
+
+<!-- 3: crypto -->
+<section class="slide" id="math">
+  <div class="kick">Under the hood · written from scratch, zero dependencies</div>
+  <h1>Real cryptography, <em>not a mock.</em></h1>
+  <div class="math">
+    <div class="eq"><span class="lbl">Commitment</span><span data-tex="C = v\cdot G + r\cdot H \quad\text{(secp256k1, issuer-signed)}"></span></div>
+    <div class="eq"><span class="lbl">Statement</span><span data-tex="v \ge t \iff d = v - t \in [0, 2^{32}),\;\; C' = C - t\cdot G"></span></div>
+    <div class="eq"><span class="lbl">Range proof</span><span data-tex="\textstyle\sum_i 2^i C_i = C',\;\; \text{PoK}\{r_i : C_i = r_iH \,\lor\, C_i - G = r_iH\}"></span></div>
+    <div class="eq"><span class="lbl">Replay-proof</span><span data-tex="e = \mathcal{H}(\text{nonce}\,\|\,\text{pred}\,\|\,C\,\|\,T_0\,\|\,T_1)"></span></div>
+  </div>
+  <div class="foot">Sound: forged proofs are rejected live · Zero-knowledge: verifier learns 1 bit · Unlinkable: fresh credential per verifier</div>
+</section>
+<script>
+  document.querySelectorAll('[data-tex]').forEach((e) => katex.render(e.dataset.tex, e, { throwOnError: false }));
+  const show = () => document.querySelectorAll('.slide').forEach((s) => s.classList.toggle('on', '#' + s.id === location.hash));
+  addEventListener('hashchange', show); show();
+</script>
+</body></html>
